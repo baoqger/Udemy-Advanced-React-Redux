@@ -69,6 +69,6 @@ export default ({ dispatch, getState }) => next => action => {
 ```
 这个middleware的开发有两个亮点：
 1. 最外层接受的参数其实是一个包含了：dispatch和getState这两个方法的对象，这个特点可以从applyMiddleware的源码中得到确认；
-2. 注意到在next(action)后面还有代码，next函数并不是一定要放在middleware的最后面。那next后门的代码是如何执行的呢？这里可以联想到Koa框架中middleware也有这样的使用。所以可以得出结论：Koa和Redux middleware都是洋葱模型，而Expressjs的middleware是线性模型。关于这一点可以看下面这篇文章：http://perkinzone.cn/2017/08/15/Redux,Koa,Express%E4%B9%8Bmiddleware%E6%9C%BA%E5%88%B6%E5%AF%B9%E6%AF%94/
+2. 注意到在next(action)后面还有代码，next函数并不是一定要放在middleware的最后面。那next后面的代码是如何执行的呢？这里可以联想到Koa框架中middleware也有这样的使用。所以可以得出结论：Koa和Redux middleware都是洋葱模型，而Expressjs的middleware是线性模型。关于这一点可以看下面这篇文章：http://perkinzone.cn/2017/08/15/Redux,Koa,Express%E4%B9%8Bmiddleware%E6%9C%BA%E5%88%B6%E5%AF%B9%E6%AF%94/
 
 
