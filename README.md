@@ -72,3 +72,13 @@ export default ({ dispatch, getState }) => next => action => {
 2. 注意到在next(action)后面还有代码，next函数并不是一定要放在middleware的最后面。那next后面的代码是如何执行的呢？这里可以联想到Koa框架中middleware也有这样的使用。所以可以得出结论：Koa和Redux middleware都是洋葱模型，而Expressjs的middleware是线性模型。关于这一点可以看下面这篇文章：http://perkinzone.cn/2017/08/15/Redux,Koa,Express%E4%B9%8Bmiddleware%E6%9C%BA%E5%88%B6%E5%AF%B9%E6%AF%94/
 
 
+#### High order component高阶组件
+
+本项目中要开发一个requireAuth的高阶组件，它的逻辑是：当用户想进入某个react组件的时候，通过登录auth的状态来判断是否允许access这个组件。因为很多不同的组件都可能会有这个需求，所以自然就可以进行抽象的操作，而高阶组件就是进行抽象的一种方法。
+
+这个项目还给出了进行高阶组件开发的四个标准步骤：
+1. 首先在现有的一个组件中，实现相应的逻辑，比如这个例子中的判断auth状态并控制access的逻辑。
+2. 新建一个高阶组件，构建它的基本架构。
+3. 把刚刚的逻辑迁移到高阶组件中。
+4. 从高阶组件向childComponent传递必须的各种属性（props等）
+
