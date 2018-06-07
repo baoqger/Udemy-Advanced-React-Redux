@@ -82,3 +82,36 @@ export default ({ dispatch, getState }) => next => action => {
 3. 把刚刚的逻辑迁移到高阶组件中。
 4. 从高阶组件向childComponent传递必须的各种属性（props等）
 
+```
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+
+// 高阶组件
+export default (ChildComponent) => { 
+	
+	class ComposedComponent extends Component {
+		// reuse的逻辑部分
+		componentDidMount() {
+			this.shouldNavigateAway();
+		}
+		componentDidUpdate() {
+			this.shouldNavigateAway();
+		}
+		shouldNavigateAway() {
+			if (!this.props.auth) {
+				this.props.history.push('/')
+			}
+		}
+		// render ChildComponent
+		render() {
+			return <ChildComponent {...this.props} />; // 传入props
+		}
+	}
+	
+	function mapStateToProps(state) {
+		return { auth: state.auth };
+	}
+	
+	return connect(mapStateToProps)(ComposedComponent);
+}
+```
