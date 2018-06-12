@@ -161,6 +161,14 @@ it('has a text area and 2 button', () => {
 ```
 此处使用了一个关键的框架enzyme，这是Airbnb出的针对react的测试框架。enzyme提供一组API，使用的风格和jQuery非常的类似，本身没什么难度，在需要的场景使用需要的API即可。
 
+如果想使用enzyme库的话，需要在src文件夹内配置一个setupTests.js的文件,如下：
+```
+import Enzyme from 'enzyme';
+import Adapter from 'enzyme-adapter-react-16';
+
+Enzyme.configure({ adapter: new Adapter() });
+```
+
 除了基本功能之外，还有下面这些略微复杂的功能：
 ```
 describe('the text area', () => {
@@ -256,3 +264,65 @@ export default function(state = [], action) {
   }
 }
 ```
+对HTTP请求的测试
+
+比如，下面这个action，会利用redux-promise来处理异步请求：
+```
+export function fetchComments() {
+  const response = axios.get('http://jsonplaceholder.typicode.com/comments');
+
+  return {
+    type: FETCH_COMMENTS,
+    payload: response,
+  };
+}
+```
+
+```
+import React from 'react';
+import { mount } from 'enzyme';
+import moxios from 'moxios';
+import Root from 'Root';
+import App from 'components/App';
+
+
+beforeEach(() => {
+  // 利用moxios拦截axios的请求，并fake一个response回去
+  moxios.install();
+  moxios.stubRequest('http://jsonplaceholder.typicode.com/comments', {
+    status: 200,
+    response: [{name: 'Fetched #1'}, {name: 'Fetched #2'}]
+  });
+});
+
+afterEach(() => {
+  moxios.uninstall();
+});
+
+it('can fetch a list of comments and display them', (done) => { // done回调参数
+  // enzyme实例
+  const wrapped = mount(
+    <Root>
+      <App />
+    </Root>
+  );
+  // 模拟click事件，发出fetchComments的异步action
+  wrapped.find('.fetch-comments').simulate('click');
+  
+  //利用moxios的wait函数来处理拦截的异步效果
+  moxios.wait(() => {
+    wrapped.update();
+    expect(wrapped.find('li').length).toEqual(2);
+    done(); //执行done，通知jest框架测试结束
+    wrapped.unmount();
+  });
+
+
+});
+```
+
+对于异步的测试算是比较复杂的情况了，它主要涉及下面几点问题：
+1. 首先Jest是基于node的runner，它通过JSDOM来模拟浏览器的行为，但是它对于axios的http请求的支持不好。
+2. 对于上面这个问题，可以引入moxios这个库，它会拦截axios的请求，然后返回faked的数据用来测试。
+3. 另外，这种http请求都是异步，所以如果直接去expect结果是不行的，需要要让程序wait一段时间。可以用settimeout来简单模拟，当然也可以使用moxios提供的wait函数。
+4. 另外，jest的每个it函数的第二个回调函数这个参数，都接受done这个回调。它的作用就是在这种异步的场合，只有手动调用了done这个回调，才表明测试结束，否则jest无法知道异步操作合适完成。
