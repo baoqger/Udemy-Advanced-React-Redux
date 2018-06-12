@@ -115,3 +115,144 @@ export default (ChildComponent) => {
 	return connect(mapStateToProps)(ComposedComponent);
 }
 ```
+
+#### 测试
+
+在实际项目中完整的单元测试和高度自动化的CI/CD流程，都是工程化的必须。这个部分主要讲解的就是React/Redux项目进行单元测试的方法和技术。
+
+Facebook自己出了一套进行单元测试的框架Jest，如果通过create-react-app脚手架创建项目的话 ，Jest这个库是内置的，不用另外install. 
+
+单元测试文件的规范：
+1. Files with .js suffix in __tests__ folders.
+2. Files with .test.js suffix.
+3. Files with .spec.js suffix.
+上面这三类情况，只要是在src文件夹内，当运行npm test的时候，这些单元测试文件内的测试case就会运行。
+
+组件基本功能的测试
+```
+import React from 'react';
+import { mount } from 'enzyme';
+import CommentBox from 'components/CommentBox';
+import Root from 'Root';
+
+let wrapped;
+
+// beforeEach函数
+beforeEach(() => {
+ // enzyme的实例，enzyme提供了三个API，mount是其中的一个，也是功能支持最全面的一个API
+  wrapped = mount(
+    <Root>
+      <CommentBox />
+    </Root>
+  );
+});
+
+// afterEach函数
+afterEach(() => {
+  wrapped.unmount();
+});
+
+// it函数
+it('has a text area and 2 button', () => {
+  //enzyme实例的find函数
+  expect(wrapped.find('textarea').length).toEqual(1);
+  expect(wrapped.find('button').length).toEqual(2);
+});
+```
+此处使用了一个关键的框架enzyme，这是Airbnb出的针对react的测试框架。enzyme提供一组API，使用的风格和jQuery非常的类似，本身没什么难度，在需要的场景使用需要的API即可。
+
+除了基本功能之外，还有下面这些略微复杂的功能：
+```
+describe('the text area', () => {
+  beforeEach(() => {
+    // simulate模拟一个事件和事件的参数 
+    wrapped.find('textarea').simulate('change', {
+      target: { value: 'new comment' }
+    })
+    wrapped.update();
+  });
+
+  it('has a text area that users can type in', () => {
+    expect(wrapped.find('textarea').prop('value')).toEqual('new comment');
+  });
+
+  it('when form is submitted, text area gets emptied', () => {
+    wrapped.find('form').simulate('submit');
+    wrapped.update();
+    expect(wrapped.find('textarea').prop('value')).toEqual('');
+  });
+});
+```
+
+除了组件之外，redux的各个部分(action, reducer等)都可以测试。
+
+对action的测试：
+
+```
+import { saveComment } from 'actions';
+import { SAVE_COMMENT } from 'actions/types';
+
+describe('saveComment', () => {
+  it('has the correct type', () =>  {
+    // 生成一个action实例
+    const action = saveComment();
+    // test action的type类型
+    expect(action.type).toEqual(SAVE_COMMENT);
+  });
+
+  it('has  the correct payload', () => {
+    const action = saveComment('New Comment');
+    // test action的payload属性
+    expect(action.payload).toEqual('New Comment');
+  });
+});
+```
+
+saveComment是一个action，定义如下：
+```
+export function saveComment(comment) {
+  return {
+    type: SAVE_COMMENT,
+    payload: comment,
+  };
+}
+```
+
+对reducer的测试：
+
+```
+import commentsReducer from 'reducers/comments';
+import { SAVE_COMMENT } from 'actions/types';
+
+it('handles actions of type SAVE_COMMENT', () => {
+  // 造一个action实例
+  const action = {
+    type: SAVE_COMMENT,
+    payload: 'New Comment',
+  };
+  // 用reducer生成一个新的state	
+  const newState = commentsReducer([], action);
+  // 判断state的新状态是否正确
+  expect(newState).toEqual(['New Comment']);
+});
+
+it('handles action with unknown type', () => {
+  const newState = commentsReducer([], { type: 'ASDFASDFSDF' });
+  expect(newState).toEqual([]);
+})
+```
+
+commentsReducer是一个reducer定义如下：
+```
+export default function(state = [], action) {
+  switch (action.type) {
+    case SAVE_COMMENT:
+      return [...state, action.payload];
+    case FETCH_COMMENTS:
+      const comments = action.payload.data.map(comment => comment.name);
+      return [...state, ...comments];
+    default:
+      return state;
+  }
+}
+```
